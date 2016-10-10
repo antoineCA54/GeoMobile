@@ -1,0 +1,59 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+	<title>QGIS2leaf webmap</title>
+	<meta charset="utf-8" />
+	<link rel="stylesheet" href="http://cdn.leafletjs.com/leaflet-0.7.2/leaflet.css" /> <!-- we will us e this as the styling script for our webmap-->
+	<link rel="stylesheet" type="text/css" href="css/own_style.css">
+<script src='https://api.tiles.mapbox.com/mapbox.js/v1.6.4/mapbox.js'></script>
+<link href='https://api.tiles.mapbox.com/mapbox.js/v1.6.4/mapbox.css' rel='stylesheet' />
+
+</head>
+<body>
+
+<link href='https://api.tiles.mapbox.com/mapbox.js/plugins/leaflet-locatecontrol/v0.24.0/L.Control.Locate.css' rel='stylesheet' />
+<script src='https://api.tiles.mapbox.com/mapbox.js/plugins/leaflet-locatecontrol/v0.24.0/L.Control.Locate.js'></script>
+
+
+	<div id="map"></div> <!-- this is the initial look of the map. in most cases it is done externally using something like a map.css stylesheet were you can specify the look of map elements, like background color tables and so on.-->
+	<script src="http://cdn.leafletjs.com/leaflet-0.7.2/leaflet.js"></script> <!-- this is the javascript file that does the magic-->
+  
+	<script src='data\com_emploi.js' ></script>
+	
+	<script>
+		var map = L.map('map', { zoomControl:true }).fitBounds([[48.3469277729,4.48441239468],[49.5172886941,8.11420113853]]);
+	var feature_group = new L.featureGroup([]);
+	
+
+		//SCAN25				 	
+// IGN Topo Scan Express Standard
+var scanWmtsUrl	= "http://gpp3-wxs.ign.fr/aa7rfg79gayebugx3yhpxul6/wmts?LAYER=GEOGRAPHICALGRIDSYSTEMS.MAPS.SCAN-EXPRESS.STANDARD&EXCEPTIONS=text/xml&FORMAT=image/jpeg&SERVICE=WMTS&VERSION=1.0.0&REQUEST=GetTile&STYLE=normal&TILEMATRIXSET=PM&&TILEMATRIX={z}&TILECOL={x}&TILEROW={y}" ;
+var SCAN25= L.tileLayer(scanWmtsUrl, {attribution: '&copy; <a href="http://www.ign.fr/">IGN</a>'}).addTo(map);
+
+		function pop_com_emploi(feature, layer) {
+			var popupContent = '<table><tr><th>attribute</th><th>value</th></tr><tr><td>ID_BDCARTO</td><td>' + feature.properties.ID_BDCARTO + '</td></tr><tr><td>NOM_COMM</td><td>' + feature.properties.NOM_COMM + '</td></tr><tr><td>INSEE_COMM</td><td>' + feature.properties.INSEE_COMM + '</td></tr><tr><td>STATUT</td><td>' + feature.properties.STATUT + '</td></tr><tr><td>X_COMMUNE</td><td>' + feature.properties.X_COMMUNE + '</td></tr><tr><td>Y_COMMUNE</td><td>' + feature.properties.Y_COMMUNE + '</td></tr><tr><td>SUPERFICIE</td><td>' + feature.properties.SUPERFICIE + '</td></tr><tr><td>POPULATION</td><td>' + feature.properties.POPULATION + '</td></tr><tr><td>INSEE_CANT</td><td>' + feature.properties.INSEE_CANT + '</td></tr><tr><td>INSEE_ARR</td><td>' + feature.properties.INSEE_ARR + '</td></tr><tr><td>NOM_DEPT</td><td>' + feature.properties.NOM_DEPT + '</td></tr><tr><td>INSEE_DEPT</td><td>' + feature.properties.INSEE_DEPT + '</td></tr><tr><td>NOM_REGION</td><td>' + feature.properties.NOM_REGION + '</td></tr><tr><td>INSEE_REG</td><td>' + feature.properties.INSEE_REG + '</td></tr><tr><td>offre</td><td>' + feature.properties.offre + '</td></tr><tr><td>desc</td><td>' + feature.properties.desc + '</td></tr><tr><td>couleur</td><td>' + feature.properties.couleur + '</td></tr></table>';
+			layer.bindPopup(popupContent);
+		}
+				
+		var com_emploiJSON = new L.geoJson(com_emploi,{
+			onEachFeature: pop_com_emploi,
+			pointToLayer: function (feature, latlng) {
+				return L.marker(latlng);
+				}
+			});
+		feature_group.addLayer(com_emploiJSON);com_emploiJSON.addTo(map);
+
+
+// GESTION DES COUCHES
+var overlayMaps = {
+    "Communes": com_emploiJSON
+};
+
+	var baseMap = {"Ign Topo Express":SCAN25,"OpenStreetMap":OSM,"Zones vulnérables":ZV};
+	L.control.layers(overlayMaps).addTo(map);
+ L.control.locate().addTo(map);
+	</script>
+</body>
+</html>
+	

@@ -1,0 +1,470 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1"> 
+	<title>GeoMobile</title>
+
+
+<script src="http://code.jquery.com/jquery-1.11.1.min.js"></script>
+
+<link href="http://netdna.bootstrapcdn.com/font-awesome/4.0.3/css/font-awesome.css" rel="stylesheet">
+<link rel="stylesheet" href="http://cdn.leafletjs.com/leaflet-0.7.3/leaflet.css" />
+<script src="http://cdn.leafletjs.com/leaflet-0.7.3/leaflet.js"></script>
+<script src='//api.tiles.mapbox.com/mapbox.js/plugins/leaflet-fullscreen/v0.0.2/Leaflet.fullscreen.min.js'></script>
+<link href='//api.tiles.mapbox.com/mapbox.js/plugins/leaflet-fullscreen/v0.0.2/leaflet.fullscreen.css' rel='stylesheet' />
+<script src='https://api.tiles.mapbox.com/mapbox.js/plugins/leaflet-label/v0.2.1/leaflet.label.js'></script>
+<link href='https://api.tiles.mapbox.com/mapbox.js/plugins/leaflet-label/v0.2.1/leaflet.label.css' rel='stylesheet' />
+<link rel="stylesheet" href="./dist/leaflet.groupedlayercontrol.css">
+<link rel="stylesheet" href="//api.tiles.mapbox.com/mapbox.js/plugins/leaflet-locatecontrol/v0.24.0/L.Control.Locate.css">
+
+<link rel="stylesheet" href="./dist/leaflet.label.css" />
+	
+	<script src="./libs/leaflet/leaflet-src.js"></script>
+
+	<script src="./src/Label.js"></script>
+	<script src="./src/BaseMarkerMethods.js"></script>
+	<script src="./src/Marker.Label.js"></script>
+	<script src="./src/CircleMarker.Label.js"></script>
+	<script src="./src/Path.Label.js"></script>
+	<script src="./src/Map.Label.js"></script>
+	<script src="./src/FeatureGroup.Label.js"></script>
+<script src='./src/easy-button.js'></script>
+
+<script src="./dist/leaflet.groupedlayercontrol.js"></script>
+
+<style>
+body {
+    padding: 0;
+    margin: 0;
+}
+		html,body,#map {
+			height: 100%;
+		}
+		.my-label {
+			position: absolute;
+			width: auto;
+			font-size: 8px;
+
+		}
+		.info {
+			padding: 6px 8px;
+			font: 14px/16px Arial, Helvetica, sans-serif;
+			background: white;
+			background: rgba(255,255,255,0.8);
+			box-shadow: 0 0 15px rgba(0,0,0,0.2);
+			border-radius: 5px;
+		}
+		.info h4 {
+			margin: 0 0 5px;
+			color: #777;
+		}
+		.legend {
+			text-align: left;
+			line-height: 18px;
+			color: #555;
+		}
+		.legend i {
+			width: 18px;
+			height: 18px;
+			float: left;
+			margin-right: 8px;
+			opacity: 0.7;
+		}
+		
+	</style>
+</head>
+<body>
+
+			<div id="map"  > 
+
+			</div>  		
+
+<script>
+
+// Variable CARTE
+
+var mapId = "map" ;
+
+// GROUPE DE COUCHES
+
+var cities = new L.LayerGroup();
+var natura = new L.LayerGroup();
+var zv = new L.LayerGroup();
+var ppc = new L.LayerGroup();
+var batiAgricole = new L.LayerGroup();
+
+// ORTHOS
+var orthosWmtsUrl	= "http://gpp3-wxs.ign.fr/aa7rfg79gayebugx3yhpxul6/wmts?LAYER=ORTHOIMAGERY.ORTHOPHOTOS&EXCEPTIONS=text/xml&FORMAT=image/jpeg&SERVICE=WMTS&VERSION=1.0.0&REQUEST=GetTile&STYLE=normal&TILEMATRIXSET=PM&&TILEMATRIX={z}&TILECOL={x}&TILEROW={y}" ;
+var ORTHOS= L.tileLayer(orthosWmtsUrl, {attribution: '&copy; <a href="http://www.ign.fr/">IGN</a>'}); 	
+//SCAN25				 	
+// IGN Topo Scan Express Standard
+var scanWmtsUrl	= "http://gpp3-wxs.ign.fr/aa7rfg79gayebugx3yhpxul6/wmts?LAYER=GEOGRAPHICALGRIDSYSTEMS.MAPS.SCAN-EXPRESS.STANDARD&EXCEPTIONS=text/xml&FORMAT=image/jpeg&SERVICE=WMTS&VERSION=1.0.0&REQUEST=GetTile&STYLE=normal&TILEMATRIXSET=PM&&TILEMATRIX={z}&TILECOL={x}&TILEROW={y}" ;
+var SCAN25= L.tileLayer(scanWmtsUrl, {attribution: '&copy; <a href="http://www.ign.fr/">IGN</a>'});
+// OPENSTREETMAP  			       
+var OSM = L.tileLayer('http://{s}.tile.osm.org/{z}/{x}/{y}.png', {attribution: '&copy; <a href="http://osm.org/copyright">OpenStreetMap</a>'});
+var map = L.map(mapId, {
+					
+					zoom: 20,
+					layers: [OSM,cities,zv],zoomControl: false
+				});
+
+map.locate({setView: true, maxZoom: 17});
+
+// GESTION DES COUCHES VECTORIELLLES
+var overlayMaps = { 
+	"Données MesParcelles": {
+	"Parcelles": cities
+	},
+	"Autres": {
+	"Zones vulnérables": zv,
+	"Natura2000": natura,
+	"PPC": ppc,
+	"Bâti agricole": batiAgricole
+	}
+};
+// GESTION DSE COUCHES RASTER
+var baseMap = {"OpenStreetMap":OSM,"Photos aériennes":ORTHOS,"Ign Topo Express":SCAN25};
+//CREATION ICONE
+var localIcon = L.icon({
+	iconUrl: 'bati_65.png',
+	iconSize:	[32,32] // Taille de l'icone
+	
+});
+	
+
+		
+function onLocationFound(e){
+
+		$.ajax({
+			type: 'POST',
+			url: 'ajax_map.php',
+			data: {
+				action: 'info_ilots',
+				lat: e.latlng.lng,
+				lng: e.latlng.lat
+					},
+			success : function(data){
+var radius = e.accuracy / 2;
+
+L.marker(e.latlng).addTo(map).bindPopup("Vous à moins de " + radius + " m de ce point").openPopup();
+
+			L.circle(e.latlng, radius).addTo(map);
+
+
+
+
+var obj =jQuery.parseJSON(data);
+var row = obj[0];
+var obj = jQuery.parseJSON(data);
+		for(i=0;i<obj.length;i++){
+
+		var tmp=obj[i];
+		
+				var rs = tmp[1];
+				var num = tmp[2];
+				var dx = tmp[4];
+				var dy = tmp[3];
+				
+				var shape= JSON.parse(tmp[0]);
+var geojsonFeature = {
+   				"type": "Feature",
+				"properties": { 
+					"exploitation": tmp[1],
+					"numero": tmp[2]
+				}, 
+				"geometry": 
+					shape
+				
+				};
+
+L.geoJson(geojsonFeature, {style:  styleIlot}).bindLabel(rs).addTo(cities);
+// LABEL
+L.marker([dy,dx], {opacity: 0.01}).bindLabel(rs, {noHide: true, className: "my-label", offset: [0, 0]}).addTo(cities);
+
+
+}
+
+
+
+
+			
+var geos = JSON.stringify(cities.toGeoJSON());
+
+
+affichageNatura(e);
+affichagePpc(e);
+affichageZv();
+affichageBatiAgricole(e);
+
+				}
+				});
+}
+
+/* Larger screens get expanded layer control and visible sidebar */
+if (document.body.clientWidth <= 767) {
+  var isCollapsed = true;
+} else {
+  var isCollapsed = false;
+}
+var layerControl = L.control.groupedLayers(baseMap,overlayMaps, {collapsed: isCollapsed }).addTo(map);
+
+map.on('locationfound',onLocationFound);
+
+// AFFICHAGE DES NATURA 2000
+function affichageNatura(e){
+
+		$.ajax({
+			type: 'POST',
+			url: 'ajax_map.php',
+			data: {
+				action: 'info_natura',
+				lat: e.latlng.lng,
+				lng: e.latlng.lat
+					},
+			success : function(data){
+
+var obj =jQuery.parseJSON(data);
+var row = obj[0];
+var obj = jQuery.parseJSON(data);
+		for(i=0;i<obj.length;i++){
+
+		var tmp=obj[i];
+		
+				var nomNatura = tmp[1] + ' ' + tmp [2] + 'm';
+				var dx = tmp[4];
+				var dy = tmp[3];
+				
+				var shape= JSON.parse(tmp[0]);
+var geojsonNatura = {
+   				"type": "Feature",
+				"properties": { 
+					"nom": tmp[1],
+					"distance": tmp[2]
+
+				}, 
+				"geometry": 
+					shape
+				
+				};
+L.geoJson(geojsonNatura , {style: style_com}).bindLabel(nomNatura, {noHide: false}).addTo(natura);
+}		
+var geos = JSON.stringify(natura.toGeoJSON());
+
+
+
+				}
+				});
+}
+// AFFICHAGE DES BATI AGRICOLE
+function affichageBatiAgricole(e){
+
+		$.ajax({
+			type: 'POST',
+			url: 'ajax_map.php',
+			data: {
+				action: 'info_agricole',
+				lat: e.latlng.lng,
+				lng: e.latlng.lat
+					},
+			success : function(data){
+
+var obj =jQuery.parseJSON(data);
+var row = obj[0];
+var obj = jQuery.parseJSON(data);
+		for(i=0;i<obj.length;i++){
+
+		var tmp=obj[i];
+		
+				var nomBati = tmp[1];
+				var dx = tmp[4];
+				var dy = tmp[3];
+				var url = tmp[2];
+				var shape= JSON.parse(tmp[0]);
+var geojsonBati = {
+   				"type": "Feature",
+				"properties": { 
+					"nom": tmp[1]
+					
+
+				}, 
+				"geometry": 
+					shape
+				
+				};
+L.geoJson(geojsonBati , {style: styleBati}).bindLabel(nomBati , {noHide: false}).addTo(batiAgricole);
+L.marker([dy,dx], {icon: localIcon}).bindLabel(nomBati).addTo(batiAgricole).openPopup();
+L.marker([dy,dx], {icon: localIcon}).bindPopup('<a href="' + url + '" class="ui-btn" id="trigger" TARGET="_blanck">' + nomBati + '</a>').addTo(batiAgricole);	
+}		
+var geos = JSON.stringify(batiAgricole.toGeoJSON());
+
+
+
+				}
+				});
+}
+// AFFICHAGE DES PPC
+function affichagePpc(e){
+
+		$.ajax({
+			type: 'POST',
+			url: 'ajax_map.php',
+			data: {
+				action: 'info_ppc',
+				lat: e.latlng.lng,
+				lng: e.latlng.lat
+					},
+			success : function(data){
+
+var obj =jQuery.parseJSON(data);
+var row = obj[0];
+var obj = jQuery.parseJSON(data);
+		for(i=0;i<obj.length;i++){
+
+		var tmp=obj[i];
+		
+				var nomPpc = tmp[1];
+				var perimetre = tmp[2];
+				var dx = tmp[5];
+				var dy = tmp[4];
+				
+				var shape= JSON.parse(tmp[0]);
+var geojsonPpc = {
+   				"type": "Feature",
+				"properties": { 
+					"nom": tmp[1],
+					"perimetre": tmp[2]
+
+				}, 
+				"geometry": 
+					shape
+				
+				};
+
+L.geoJson(geojsonPpc , {style: stylePpc}).bindLabel(nomPpc, {noHide: true}).addTo(ppc);
+
+}		
+var geos = JSON.stringify(ppc.toGeoJSON());
+
+				}
+				});
+}
+// AFFICHAGE DES ZONES VULNERABLES
+function affichageZv(){
+
+		$.ajax({
+			type: 'POST',
+			url: 'ajax_map.php',
+			data: {
+				action: 'info_zv'
+					},
+			success : function(data){
+
+var obj =jQuery.parseJSON(data);
+var row = obj[0];
+var obj = jQuery.parseJSON(data);
+		for(i=0;i<obj.length;i++){
+
+		var tmp=obj[i];
+		
+				var nomZv = tmp[1];
+
+				
+				var shape= JSON.parse(tmp[0]);
+var geojsonZv = {
+   				"type": "Feature",
+				"properties": { 
+					"bassin": tmp[1]
+				}, 
+				"geometry": 
+					shape
+				
+				};
+
+L.geoJson(geojsonZv , {style: styleZv}).bindLabel(nomZv, {noHide: true}).addTo(zv);
+
+}		
+var geos = JSON.stringify(zv.toGeoJSON());
+
+				}
+				});
+}
+function getColor(d) {
+return 		d == 'autre' ? 	'yellow' :
+	 	d == 'prairie' ? 	'green' : 
+				'white';
+}
+
+function getColorPpc(de) {
+return 		de == 'Rapproché' ? 	'red' :
+	 	de == 'Eloigné' ? 	'blue' : 
+				'white';
+}
+
+
+function style(feature) {
+    return {
+        fillColor: getColor(feature.properties.cultid),
+        weight: 1.5,
+        opacity: 1,
+        color: getColor(feature.properties.cultid),
+        fillOpacity:0.7
+    };
+}
+function styleBati(feature) {
+    return {
+        fillColor: 'black',
+        weight: 1.5,
+        opacity: 1,
+        color: 'white',
+        fillOpacity:0.7
+    };
+}
+function stylePpc(feature) {
+    return {
+        fillColor: getColorPpc(feature.properties.perimetre),
+        weight: 1.5,
+        opacity: 1,
+        color: getColorPpc(feature.properties.perimetre),
+	dashArray: '3',
+        fillOpacity:0.2
+    };
+}
+function style_com(feature) {
+    return {
+        fillColor: 'yellow',
+        weight: 4,
+        opacity: 1,
+        color: 'yellow',
+        dashArray: '3',
+        fillOpacity:0.1
+    };
+}
+function styleZv(feature) {
+    return {
+        fillColor: 'green',
+        weight: 4,
+        opacity: 1,
+        color: 'white',
+        dashArray: '3',
+        fillOpacity:0.3
+    };
+}
+
+function styleIlot(feature) {
+    return {
+        fillColor: 'whitre',
+        weight: 2,
+        opacity: 1,
+        color: 'white',
+        dashArray: '2',
+        fillOpacity:0.3
+    };
+}
+
+
+
+</script>
+<script src="//api.tiles.mapbox.com/mapbox.js/plugins/leaflet-locatecontrol/v0.24.0/L.Control.Locate.js"></script>
+</body>
+</html>

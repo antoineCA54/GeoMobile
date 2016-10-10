@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="text/html; charset=LATIN9">
+
+	<title>Accueil</title>
+
+<link rel="stylesheet" href="http://code.jquery.com/mobile/1.4.4/jquery.mobile-1.4.4.min.css" />
+<link rel="stylesheet" href="listview-grid.css">
+<script src="http://code.jquery.com/jquery-1.11.1.min.js"></script>
+<script src="http://code.jquery.com/mobile/1.4.4/jquery.mobile-1.4.4.min.js"></script>
+
+</head>
+<body>
+<div data-role="page">
+	<div data-role="header" data-theme="a" data-position="fixed">
+		<h1>Accueil de l'analyse de groupe</h1>
+	<a href="http://90.83.148.229:8080/jasperserver/flow.html?_flowId=viewReportFlow&standAlone=true&_flowId=viewReportFlow&ParentFolderUri=%2Fcopie_siganalyse%2Frapports_cral_1&reportUnit=%2Fcopie_siganalyse%2Frapports_cral_1%2Frapport_verification_bilanrecolte" target="framename" data-icon="action" data-transition="turn" data-transition="fade" >Vers SigaAnalyses</a>
+
+	</div>
+	<div role="main" class"ui-content">
+	
+	<ul data-role="listview" data-inset="true">
+        	<li><a href="#">
+            	<img src="../assets/verif.png" class="ui-li-thumb">
+            	<h2>Vérification</h2>
+                <p>Faire une demande de vérification</p>
+                <p class="ui-li-aside">GP</p>
+            </a></li>
+        	<li><a href="#">
+            	<img src="../assets/param.png" class="ui-li-thumb">
+            	<h2>Paramètrages</h2>
+                <p>Paramètrages des plages de valeurs et de dates</p>
+                <p class="ui-li-aside">GP</p>
+            </a></li>
+        	<li><a href="#">
+            	<img src="../assets/validation.png" class="ui-li-thumb">
+            	<h2>Validation</h2>
+                <p>Demande de validation</p>
+                <p class="ui-li-aside">GP</p>
+            </a></li>
+	<ul>
+	</div>
+	<div data-role="footer" data-theme="a">
+		<p>&copy; 2011-15 Chambres Agriculture Lorraine-Alsace</p>
+	</div>	
+</div>	
+</body>
+</html>

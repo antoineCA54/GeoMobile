@@ -1,0 +1,462 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1"> 
+	<title>GAMP</title>
+<link rel="stylesheet" href="http://code.jquery.com/mobile/1.4.3/jquery.mobile-1.4.3.min.css" />
+<script src="http://code.jquery.com/jquery-1.11.1.min.js"></script>
+<script src="http://code.jquery.com/mobile/1.4.3/jquery.mobile-1.4.3.min.js"></script>
+<link rel="stylesheet" href="http://cdn.leafletjs.com/leaflet-0.7.3/leaflet.css" />
+<script src="http://cdn.leafletjs.com/leaflet-0.7.3/leaflet.js"></script>
+<script src='//api.tiles.mapbox.com/mapbox.js/plugins/leaflet-fullscreen/v0.0.2/Leaflet.fullscreen.min.js'></script>
+<link href='//api.tiles.mapbox.com/mapbox.js/plugins/leaflet-fullscreen/v0.0.2/leaflet.fullscreen.css' rel='stylesheet' />
+<script src='https://api.tiles.mapbox.com/mapbox.js/plugins/leaflet-label/v0.2.1/leaflet.label.js'></script>
+<link href='https://api.tiles.mapbox.com/mapbox.js/plugins/leaflet-label/v0.2.1/leaflet.label.css' rel='stylesheet' />
+
+
+
+
+<style>
+		#map {
+			width: 100%;
+			height: 1000px;
+		}
+
+		.info {
+			padding: 6px 8px;
+			font: 14px/16px Arial, Helvetica, sans-serif;
+			background: white;
+			background: rgba(255,255,255,0.8);
+			box-shadow: 0 0 15px rgba(0,0,0,0.2);
+			border-radius: 5px;
+		}
+		.info h4 {
+			margin: 0 0 5px;
+			color: #777;
+		}
+		.legend {
+			text-align: left;
+			line-height: 18px;
+			color: #555;
+		}
+		.legend i {
+			width: 18px;
+			height: 18px;
+			float: left;
+			margin-right: 8px;
+			opacity: 0.7;
+		}
+		
+	</style>
+</head>
+<body>
+<div data-role="main" id="expl">
+<input type="text" name="text-1" id="text-1" value="" onchange="afficher_centre_carte()">
+</div>
+			<div id="map"  > 
+
+			</div>  		
+<script>
+$("#text-1").focus();
+// Variable CARTE
+
+var mapId = "map" ;
+
+// GROUPE DE COUCHES
+     var cities = new L.LayerGroup();
+     var cities2 = new L.LayerGroup();
+    var bat_agri = new L.LayerGroup();
+    var lo_vezo = new L.LayerGroup();
+
+// ORTHOS
+var orthosWmtsUrl	= "http://gpp3-wxs.ign.fr/aa7rfg79gayebugx3yhpxul6/wmts?LAYER=ORTHOIMAGERY.ORTHOPHOTOS&EXCEPTIONS=text/xml&FORMAT=image/jpeg&SERVICE=WMTS&VERSION=1.0.0&REQUEST=GetTile&STYLE=normal&TILEMATRIXSET=PM&&TILEMATRIX={z}&TILECOL={x}&TILEROW={y}" ;
+var ORTHOS= L.tileLayer(orthosWmtsUrl, {attribution: '&copy; <a href="http://www.ign.fr/">IGN</a>'}); 	
+//SCAN25				 	
+// IGN Topo Scan Express Standard
+var scanWmtsUrl	= "http://gpp3-wxs.ign.fr/aa7rfg79gayebugx3yhpxul6/wmts?LAYER=GEOGRAPHICALGRIDSYSTEMS.MAPS.SCAN-EXPRESS.STANDARD&EXCEPTIONS=text/xml&FORMAT=image/jpeg&SERVICE=WMTS&VERSION=1.0.0&REQUEST=GetTile&STYLE=normal&TILEMATRIXSET=PM&&TILEMATRIX={z}&TILECOL={x}&TILEROW={y}" ;
+var SCAN25= L.tileLayer(scanWmtsUrl, {attribution: '&copy; <a href="http://www.ign.fr/">IGN</a>'});
+// OPENSTREETMAP  			       
+var OSM = L.tileLayer('http://{s}.tile.osm.org/{z}/{x}/{y}.png', {attribution: '&copy; <a href="http://osm.org/copyright">OpenStreetMap</a>'});
+// WMS A MOI
+var moiUrl	= "http://lo.mesparcelles.fr/portail_base/carte_proxy.php?iduser=44&url=http://192.168.20.31/mapcache/service&LAYERS=orthos&SERVICE=WMTS&VERSION=1.1.1&REQUEST=GetTile&EXCEPTIONS=application/vnd.ogc.se_inimage&FORMAT=image/jpeg&SRS=EPSG:2154&STYLES=&TILEMATRIXSET=PM&&TILEMATRIX={z}&TILECOL={x}&TILEROW={y}" ;
+var MOI = L.tileLayer.wms(moiUrl, {attribution: '&copy; <a href="http://osm.org/copyright">CRAL</a>'});
+// WMS 
+var mywms = L.tileLayer.wms("http://192.168.20.31/mapcache/service", {
+	layers: 'orthos',
+	format: 'image/png',
+	transparent: true,
+	version: '1.1.1',
+	attribution: "CRAL"
+});
+var mywmsscan = L.tileLayer("http://192.168.20.31/mapcache/service/{z}/{x}/{y}.png", {
+	layers: 'scans25',
+	exceptions: 'applicatio/vnd.ogc.se_xml',
+	tileSize: 256,
+	version: '1.1.1',
+	attribution: "CRAL"
+});
+
+var map = L.map(mapId, {
+					
+					zoom: 15,
+					layers: [OSM,bat_agri],fullscreenControl: true
+				});
+
+map.locate({setView: true, maxZoom: 16});
+
+// GESTION DES COUCHES
+var overlayMaps = {
+ "Bâtiments agricoles": bat_agri
+};
+
+var baseMap = {"OpenStreetMap":OSM,"Photos aériennes":ORTHOS,"Ign Topo Express":SCAN25,"WMS":mywms,"WMS SCAN":mywmsscan};
+
+//afficher_centre_carte();
+ajouter_bati_agricole();
+
+function ajouter_bati_agricole(){
+	$.ajax({
+			type: 'POST',
+			url: 'ajax_map.php',
+			data: {
+				action: 'afficher_bati_agricole'
+					},
+			success : function(data){
+
+
+var obj =jQuery.parseJSON(data);
+var row = obj[0];
+var obj = jQuery.parseJSON(data);
+		for(i=0;i<obj.length;i++){
+
+		var tmp=obj[i];
+		
+				var y = tmp[1];
+				var x = tmp[2];
+				var n = tmp[3];
+var u= tmp[4];
+				var shape= JSON.parse(tmp[0]);
+var geobatiagricole = {
+   				"type": "Feature",
+				"properties": { 
+					"nature": tmp[3],
+					"url": tmp[4]
+				}, 
+				"geometry": 
+					shape
+				
+				};
+L.geoJson(geobatiagricole , {style: style_bati}).addTo(bat_agri);
+
+
+L.marker([y,x]).bindLabel(n).addTo(map).openPopup();
+L.marker([y,x]).bindPopup('<a href="' + u + '" class="ui-btn" id="trigger" TARGET="_blanck">' + n + '</a>').addTo(map);	
+}
+var geos = JSON.stringify(cities2.toGeoJSON());
+L.control.layers(baseMap,overlayMaps).addTo(map);
+
+
+				}
+				});
+}
+
+
+
+function ajouter_contrats() {
+// Recherche de contrats de type LO_VEZO
+$.ajax({
+			type: 'POST',
+			url: 'ajax_map.php',
+			data: {
+				action: 'afficher_contrats'
+					},
+			success : function(data){
+var obj =jQuery.parseJSON(data);
+var row = obj[0];
+var obj = jQuery.parseJSON(data);
+		for(i=0;i<obj.length;i++){
+
+		var tmp=obj[i];
+				var y = tmp[7];
+				var x = tmp[6];
+				var n = tmp[0];
+				var shape= JSON.parse(tmp[5]);
+var geoContrats = {
+   				"type": "Feature",
+				"properties": { 
+					"n": tmp[0],
+					"numilot": tmp[1],
+					"surface": tmp[3]
+				}, 
+				"geometry": 
+					shape
+				
+				};
+L.geoJson(geoContrats , {style: style_com,
+				onEachFeature: onEachFeature2}).addTo(lo_vezo);
+L.marker([y,x]).bindLabel(n).addTo(map).openPopup();
+}
+
+
+var geos = JSON.stringify(lo_vezo.toGeoJSON());
+
+				}
+				});
+
+}
+
+function ajouter_commune(){
+	$.ajax({
+			type: 'POST',
+			url: 'ajax_map.php',
+			data: {
+				action: 'afficher_une_commune',
+				idcommune: $("#text-1").val()
+					},
+			success : function(data){
+
+
+var obj =jQuery.parseJSON(data);
+var row = obj[0];
+var obj = jQuery.parseJSON(data);
+		for(i=0;i<obj.length;i++){
+
+		var tmp=obj[i];
+		
+				var y = tmp[1];
+				var x = tmp[2];
+				var n = tmp[3];
+				var shape= JSON.parse(tmp[0]);
+var geocommune = {
+   				"type": "Feature",
+				"properties": { 
+					"nom": tmp[3]
+				}, 
+				"geometry": 
+					shape
+				
+				};
+L.geoJson(geocommune, {style: style_com}).addTo(cities2);
+}
+
+
+L.marker([y,x]).bindLabel(n).addTo(map).openPopup();	
+map.panTo([y,x]);
+var geos = JSON.stringify(cities2.toGeoJSON());
+
+
+
+				}
+				});
+}
+  
+  
+function afficher_centre_carte(){
+
+		$.ajax({
+			type: 'POST',
+			url: 'ajax_map.php',
+			data: {
+				action: 'recherche_shape_2',
+				rowid: $("#text-1").val()
+					},
+			success : function(data){
+
+
+var obj =jQuery.parseJSON(data);
+var row = obj[0];
+var obj = jQuery.parseJSON(data);
+		for(i=0;i<obj.length;i++){
+
+		var tmp=obj[i];
+		
+				var y = tmp[1];
+				var x = tmp[2];
+				var shape= JSON.parse(tmp[0]);
+var geojsonFeature = {
+   				"type": "Feature",
+				"properties": { 
+					"density": tmp[3],
+					"name": tmp[4],
+					"rs": tmp[5]
+				}, 
+				"geometry": 
+					shape
+				
+				};
+L.geoJson(geojsonFeature, {style: style,
+				onEachFeature: onEachFeature}).addTo(cities);
+}
+
+
+
+			
+var geos = JSON.stringify(cities.toGeoJSON());
+
+ajouter_commune();
+
+				}
+				});
+
+
+
+
+
+
+
+
+
+}
+
+var legend = L.control({position: 'bottomright'});
+
+		legend.onAdd = function (map) {
+
+			var div = L.DomUtil.create('div', 'info legend'),
+				grades = [0, 30, 60, 80],
+				labels = [],
+				from, to;
+
+			for (var i = 0; i < grades.length; i++) {
+				from = grades[i];
+				to = grades[i + 1];
+
+				labels.push(
+					'<i style="background:' + getColor(from + 1) + '"></i> ' +
+					from + (to ? '&ndash;' + to : '+'));
+			}
+
+			div.innerHTML = labels.join('<br>');
+			return div;
+		};
+
+//		legend.addTo(map);
+function style(feature) {
+    return {
+        fillColor: getColor(feature.properties.density),
+        weight: 2,
+        opacity: 1,
+        color: 'white',
+        dashArray: '3',
+        fillOpacity: 0.7
+    };
+}
+function style_com(feature) {
+    return {
+        
+        weight: 4,
+        opacity: 1,
+        color: 'blue',
+        dashArray: '3',
+        fillOpacity:0
+    };
+}
+function style_bati(feature) {
+    return {
+         fillColor:'black',
+        weight: 1,
+        opacity: 1,
+        color: 'black',
+        dashArray: '3',
+        fillOpacity:1
+    };
+}
+// control that shows state info on hover
+
+var info = L.control();
+
+info.onAdd = function (map) {
+			this._div = L.DomUtil.create('div', 'info');
+			this.update();
+			return this._div;
+		};
+info.update = function (props) {
+			this._div.innerHTML = '<h4>Culture et rendement</h4>' +  (props ? 
+				
+				'<b>' + props.rs + ', ' + props.name + '</b><br />' + props.density + ' Qtx/ha'
+				: 'Par dessus une parcelle');
+		};
+
+//info.addTo(map);
+var info2 = L.control();
+
+info2.onAdd = function (map) {
+			this._div = L.DomUtil.create('div', 'info');
+			this.update();
+			return this._div;
+		};
+info2.update = function (props) {
+			this._div.innerHTML = '<h4>Contrats</h4>' +  (props ? 
+				
+				'<b>' + props.n + '</b><br />' + 'N°ilot :' + props.numilot + '</b><br />' + props.surface + ' ha'
+				: 'Par dessus un contrat');
+		};
+
+//info2.addTo(map);
+function highlightFeature(e) {
+			var layer = e.target;
+
+			
+
+			if (!L.Browser.ie && !L.Browser.opera) {
+				layer.bringToFront();
+			}
+
+			info.update(layer.feature.properties);
+		}
+var geojson;
+
+function resetHighlight(e) {
+		var layer=e.target;
+			layer.resetStyle(e.target);
+			info.update();
+		}		
+function zoomToFeature(e) {
+			map.fitBounds(e.target.getBounds());
+		}
+
+function onEachFeature(feature, layer) {
+			layer.on({
+				mouseover: highlightFeature,
+				mouseout: resetHighlight,
+				click: zoomToFeature
+			});
+		}
+function onEachFeature2(feature,layer) {
+
+		layer.on({
+				mouseover: highlightFeature2,
+				mouseout: resetHighlight2
+			});
+		}
+function highlightFeature2(e) {
+			var layer = e.target;
+
+			
+
+			if (!L.Browser.ie && !L.Browser.opera) {
+				layer.bringToFront();
+			}
+
+			info2.update(layer.feature.properties);
+		}
+
+
+function resetHighlight2(e) {
+		var layer=e.target;
+			layer.resetStyle(e.target);
+			info2.update();
+		}
+function getColor(d) {
+
+    return d > 80 ? '#bd0026' :
+    	    d > 60 ? '#f03b20':
+ 	    d > 30 ? '#fd8d3c':
+	    d > 0 ? '#fecc5c':
+                      '#ffffb2';
+}
+
+</script>
+</body>
+</html>

@@ -1,0 +1,85 @@
+<?php
+include("../assets/connex.inc.php");
+
+if(isset($_POST['action']) && !empty($_POST['action']) && $_POST['action']=="recherche_shape")
+	{
+		$idcom=connex2("bdaplat_nt","myparam");
+		$requete="SELECT ST_AsGeoJSON(st_transform(p.iep_par_geom,4326)),(
+SELECT st_y(st_centroid(st_transform(st_union(px.iep_par_geom),4326)))  as cc FROM parcelles_2013 px 
+WHERE iep_idexploitation='".$_POST['rowid']."'
+) as y,
+(
+SELECT st_x(st_centroid(st_transform(st_union(px.iep_par_geom),4326)))  as cc FROM parcelles_2013 px 
+WHERE iep_idexploitation='".$_POST['rowid']."'
+) as x,
+coalesce(iep_par_rdtmoy,0) as cultid,iep_par_cultlibusage,exp_raisonsociale
+FROM public.parcelles_2013 p
+WHERE 
+p.iep_idexploitation='".$_POST['rowid']."'";
+		$result=pg_query($idcom,$requete);
+
+		if(pg_num_rows($result)>0) {
+			$myarray = array();
+			while ($row = pg_fetch_row($result)) {
+  				$myarray[] = $row;
+			}
+			echo json_encode($myarray);
+		}
+	else {
+		echo null;
+	}
+		pg_close($idcom);
+	}
+
+if(isset($_POST['action']) && !empty($_POST['action']) && $_POST['action']=="recherche_shape_2")
+	{
+		$idcom=connex2("bdaplat_nt","myparam");
+		$requete="SELECT ST_AsGeoJSON(st_transform(p.iep_par_geom,4326)),
+st_y(st_centroid(st_transform((tc.geom),4326))) as y,
+st_x(st_centroid(st_transform((tc.geom),4326))) as x,
+coalesce(iep_par_rdtmoy,0)::numeric(10,2) as cultid,iep_par_cultlibusage,exp_raisonsociale,iep_par_comlib
+FROM public.parcelles_2013 p
+JOIN public.tcommunes tc ON idcommune=iep_par_comcode
+WHERE 
+tc.idcommune='".$_POST['rowid']."'";
+		$result=pg_query($idcom,$requete);
+
+		if(pg_num_rows($result)>0) {
+			$myarray = array();
+			while ($row = pg_fetch_row($result)) {
+  				$myarray[] = $row;
+			}
+			echo json_encode($myarray);
+		}
+	else {
+		echo null;
+	}
+		pg_close($idcom);
+	}
+
+if(isset($_POST['action']) && !empty($_POST['action']) && $_POST['action']=="afficher_une_commune")
+	{
+		$idcom=connex2("bdaplat_nt","myparam");
+		$requete="SELECT ST_AsGeoJSON(st_transform(geom,4326)),
+st_y(st_centroid(st_transform((tc.geom),4326))) as y,
+st_x(st_centroid(st_transform((tc.geom),4326))) as x,
+nom
+FROM public.tcommunes tc
+WHERE 
+cast(tc.idcommune as integer)='".$_POST['idcommune]."'";
+echo $requete;
+		$result=pg_query($idcom,$requete);
+
+		if(pg_num_rows($result)>0) {
+			$myarray = array();
+			while ($row = pg_fetch_row($result)) {
+  				$myarray[] = $row;
+			}
+			echo json_encode($myarray);
+		}
+	else {
+		echo null;
+	}
+		pg_close($idcom);
+	}
+?>

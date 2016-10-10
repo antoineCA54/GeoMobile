@@ -1,0 +1,8 @@
+
+require_once "client/JasperClient.php";
+
+$client = new Jasper\JasperClient('192.168.20.13', // Hostname
+								   8080, // Port
+								  'jasperadmin', // Username
+								  's36a6euh', // Password
+								  '/jasperserver'); // Base URL
