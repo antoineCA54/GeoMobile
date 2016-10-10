@@ -39,7 +39,7 @@ function afficher_menu(){
 			success : function(data){	
 				buffer1='<p><strong>Bienvenue.</strong> Gestion des paramètres SigaAnalyses</p>';
 				buffer1=buffer1 + '<ul data-role="listview" data-inset="true" data-theme="a" data-dividertheme="g">';
-				buffer1=buffer1 + '<li data-role="list-divider">Départements</li>';
+				buffer1=buffer1 + '<li data-role="list-divider">Départements2</li>';
 				var obj = jQuery.parseJSON(data);
 				for(i=0;i<obj.length;i++){
 					var tmp=obj[i];
